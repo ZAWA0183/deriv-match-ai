@@ -23,6 +23,18 @@ button{background:#17334a;font-weight:700}button.primary{background:#087f73}butt
 canvas{width:100%;height:150px;background:#0a1525;border-radius:12px}
 details summary{cursor:pointer;color:#d8e4f3;font-weight:700}
 </style>
+
+<style>
+#backtestPanel{margin:16px 0;padding:14px;border:1px solid #334155;border-radius:14px;background:#0f172a;color:#e2e8f0}
+#backtestPanel h2{margin:0 0 10px;font-size:18px}.bt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bt-grid label{font-size:12px;color:#94a3b8}.bt-grid select{width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid #475569;background:#111827;color:#fff}
+.bt-btn{margin-top:10px;width:100%;padding:11px;border:0;border-radius:9px;background:#2563eb;color:#fff;font-weight:700}.bt-btn:disabled{opacity:.55}
+.bt-status{margin-top:9px;font-size:12px;color:#cbd5e1;white-space:pre-wrap}.bt-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:10px}
+.bt-card{padding:9px;border-radius:9px;background:#111827;border:1px solid #334155}.bt-card b{display:block;font-size:16px;color:#fff}.bt-card span{font-size:11px;color:#94a3b8}
+.bt-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}.bt-table th,.bt-table td{border-bottom:1px solid #334155;padding:5px;text-align:right}
+.bt-table th:first-child,.bt-table td:first-child{text-align:left}#btChart{width:100%;height:150px;background:#020617;border-radius:9px;margin-top:10px}
+</style>
+
 </head>
 <body>
 <header>
@@ -222,5 +234,169 @@ function downloadLog(){
 document.getElementById("symbol").onchange=e=>{document.getElementById("symbolText").textContent=e.target.value;if(running)start()};
 renderStats();renderHistory();renderDist();
 </script>
+
+<section id="backtestPanel">
+<h2>📊 BACKTEST V2</h2>
+<div class="bt-grid">
+<label>Symbol<select id="btSymbol">
+<option value="1HZ100V">Volatility 100 (1s)</option>
+<option value="1HZ75V">Volatility 75 (1s)</option>
+<option value="1HZ50V">Volatility 50 (1s)</option>
+<option value="R_100">Volatility 100</option>
+<option value="R_75">Volatility 75</option>
+</select></label>
+<label>Ticks<select id="btCount">
+<option value="10000">10,000</option>
+<option value="25000">25,000</option>
+<option value="50000">50,000</option>
+</select></label>
+</div>
+<button class="bt-btn" id="btStart">BACKTEST START</button>
+<div class="bt-status" id="btStatus">過去ティックを取得してV1予測ロジックを検証します。</div>
+<div class="bt-stats">
+<div class="bt-card"><b id="btTrades">-</b><span>ENTRY</span></div>
+<div class="bt-card"><b id="btSkips">-</b><span>SKIP</span></div>
+<div class="bt-card"><b id="btWins">-</b><span>WIN</span></div>
+<div class="bt-card"><b id="btLosses">-</b><span>LOSS</span></div>
+<div class="bt-card"><b id="btWinRate">-</b><span>WIN RATE</span></div>
+<div class="bt-card"><b id="btMaxLoss">-</b><span>MAX LOSS STREAK</span></div>
+</div>
+<canvas id="btChart" width="700" height="150"></canvas>
+<table class="bt-table"><thead><tr><th>Digit</th><th>ENTRY</th><th>WIN</th><th>LOSS</th><th>WR</th></tr></thead>
+<tbody id="btDigits"></tbody></table>
+<button class="bt-btn" id="btCsv">CSV DOWNLOAD</button>
+</section>
+
+
+<script>
+(()=> {
+const WS="wss://api.derivws.com/trading/v1/options/ws/public";
+const LOOKBACK=200,MIN_CONF=.13,MIN_SEP=.015;
+const $=id=>document.getElementById(id);let rows=[];
+
+function digit(x){const m=String(x).match(/(\d)(?!.*\d)/);return m?+m[1]:null}
+
+function score(a){
+ const n=a.length;
+ const f=Array(10).fill(0);
+ const t=Array.from({length:10},()=>Array(10).fill(0));
+ const c2=new Map(),c3=new Map();
+ for(const d of a) f[d]++;
+ for(let i=1;i<n;i++) t[a[i-1]][a[i]]++;
+ for(let i=2;i<n;i++){
+   const k=a[i-2]+""+a[i-1];
+   if(!c2.has(k)) c2.set(k,Array(10).fill(0));
+   c2.get(k)[a[i]]++;
+ }
+ for(let i=3;i<n;i++){
+   const k=a[i-3]+""+a[i-2]+""+a[i-1];
+   if(!c3.has(k)) c3.set(k,Array(10).fill(0));
+   c3.get(k)[a[i]]++;
+ }
+ const last=a[n-1],p2=a[n-2],p3=a[n-3];
+ const row=t[last],rt=row.reduce((x,y)=>x+y,0);
+ const s2=c2.get(p3+""+p2)||[],s3=c3.get(p3+""+p2+""+last)||[];
+ const z2=s2.reduce((x,y)=>x+y,0),z3=s3.reduce((x,y)=>x+y,0);
+ const s=Array.from({length:10},(_,d)=>{
+   const fp=f[d]/n;
+   const tp=rt?row[d]/rt:0;
+   const q2=z2?s2[d]/z2:fp;
+   const q3=z3?s3[d]/z3:fp;
+   return .20*fp+.20*tp+.25*q2+.35*q3;
+ });
+ const o=[...s.keys()].sort((x,y)=>s[y]-s[x]);
+ return {pred:o[0],conf:s[o[0]],sep:s[o[0]]-s[o[1]]};
+}
+
+function history(symbol,count){
+ return new Promise((resolve,reject)=>{
+   const ws=new WebSocket(WS);
+   const tm=setTimeout(()=>{try{ws.close()}catch(e){};reject(Error("履歴取得タイムアウト"))},30000);
+   ws.onopen=()=>ws.send(JSON.stringify({
+     ticks_history:symbol,end:"latest",count,style:"ticks",subscribe:0
+   }));
+   ws.onerror=()=>{clearTimeout(tm);reject(Error("WebSocket接続エラー"))};
+   ws.onmessage=e=>{
+     const d=JSON.parse(e.data);
+     if(d.error){clearTimeout(tm);try{ws.close()}catch(e){};reject(Error(d.error.message));return}
+     if(d.msg_type==="history"){
+       clearTimeout(tm);try{ws.close()}catch(e){}
+       resolve((d.history.prices||[]).map(digit).filter(x=>x!==null));
+     }
+   };
+ });
+}
+
+function chart(a){
+ const c=$("btChart"),x=c.getContext("2d");
+ const w=c.width=c.clientWidth*2||700,h=c.height=300;
+ x.clearRect(0,0,w,h);if(!a.length)return;
+ let lo=Math.min(...a),hi=Math.max(...a);
+ if(lo===hi){lo--;hi++}
+ x.strokeStyle="#60a5fa";x.lineWidth=3;x.beginPath();
+ a.forEach((v,i)=>{
+   const px=5+i*(w-10)/(a.length-1||1);
+   const py=h-10-(v-lo)*(h-20)/(hi-lo);
+   i?x.lineTo(px,py):x.moveTo(px,py);
+ });
+ x.stroke();
+}
+
+$("btStart").onclick=async()=>{
+ const b=$("btStart");b.disabled=true;rows=[];
+ $("btStatus").textContent="過去データを取得中…";
+ try{
+   const n=+$("btCount").value;
+   const a=await history($("btSymbol").value,n);
+   if(a.length<LOOKBACK+2) throw Error("取得データが少なすぎます");
+
+   let w=0,l=0,skip=0,streak=0,max=0,cum=0;
+   const eq=[0],ds=Array.from({length:10},()=>({p:0,w:0,l:0}));
+
+   for(let i=LOOKBACK;i<a.length-1;i++){
+     const s=score(a.slice(i-LOOKBACK,i)),actual=a[i];
+     if(s.conf<MIN_CONF||s.sep<MIN_SEP){skip++;continue}
+     const win=s.pred===actual;
+     ds[s.pred].p++;
+     if(win){
+       w++;streak=0;ds[s.pred].w++;cum++;
+     }else{
+       l++;streak++;max=Math.max(max,streak);ds[s.pred].l++;cum--;
+     }
+     eq.push(cum);
+     rows.push({i,pred:s.pred,actual,result:win?"WIN":"LOSS",conf:s.conf,sep:s.sep});
+   }
+
+   const tr=w+l,wr=tr?w/tr*100:0;
+   $("btTrades").textContent=tr.toLocaleString();
+   $("btSkips").textContent=skip.toLocaleString();
+   $("btWins").textContent=w.toLocaleString();
+   $("btLosses").textContent=l.toLocaleString();
+   $("btWinRate").textContent=wr.toFixed(2)+"%";
+   $("btMaxLoss").textContent=max.toLocaleString();
+   $("btStatus").textContent=
+     `完了：${a.length.toLocaleString()} ticks / ENTRY ${tr.toLocaleString()} / SKIP ${skip.toLocaleString()} / WIN RATE ${wr.toFixed(2)}%`;
+
+   $("btDigits").innerHTML=ds.map((s,d)=>
+     `<tr><td>${d}</td><td>${s.p}</td><td>${s.w}</td><td>${s.l}</td><td>${s.p?(s.w/s.p*100).toFixed(1):"0.0"}%</td></tr>`
+   ).join("");
+   chart(eq);
+ }catch(e){
+   $("btStatus").textContent="エラー："+e.message;
+ }finally{b.disabled=false}
+};
+
+$("btCsv").onclick=()=>{
+ if(!rows.length)return;
+ const csv="index,prediction,actual,result,confidence,separation\n"+
+   rows.map(r=>[r.i,r.pred,r.actual,r.result,r.conf.toFixed(6),r.sep.toFixed(6)].join(",")).join("\n");
+ const a=document.createElement("a");
+ a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+ a.download="deriv_match_backtest_v2.csv";
+ a.click();
+};
+})();
+</script>
+
 </body>
 </html>
