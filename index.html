@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b1220">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Deriv Match AI V3</title>
+<title>Deriv Match AI V3 FIXED</title>
 <style>
 :root{--bg:#07111f;--card:#101c2e;--muted:#8fa3bd;--text:#f4f7fb;--line:#22324a;--accent:#35d0ba;--danger:#ff667a;--warn:#ffc857}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#07111f,#0b1422);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;padding-bottom:34px}
@@ -38,8 +38,8 @@ details summary{cursor:pointer;color:#d8e4f3;font-weight:700}
 </head>
 <body>
 <header>
-  <h1>Deriv Match AI V3</h1>
-  <div class="sub">iPhone専用・DIGITMATCH研究 / V3 Paper Trading</div>
+  <h1>Deriv Match AI V3 FIXED</h1>
+  <div class="sub">iPhone専用・DIGITMATCH研究 / Paper Trading / Demo</div>
 </header>
 <main>
   <div class="card">
@@ -81,44 +81,13 @@ details summary{cursor:pointer;color:#d8e4f3;font-weight:700}
 
   <div class="card">
     <div class="label">V3 Settings</div>
-    <div class="grid" style="margin-top:10px">
-      <label class="small">Lookback
-        <select id="lookbackSetting">
-          <option value="100">100 ticks</option>
-          <option value="150">150 ticks</option>
-          <option value="200" selected>200 ticks</option>
-          <option value="300">300 ticks</option>
-        </select>
-      </label>
-      <label class="small">Min Confidence
-        <select id="minConfSetting">
-          <option value="0.11">0.11</option>
-          <option value="0.13" selected>0.13</option>
-          <option value="0.15">0.15</option>
-          <option value="0.18">0.18</option>
-        </select>
-      </label>
-      <label class="small">Min Separation
-        <select id="minSepSetting">
-          <option value="0.010">0.010</option>
-          <option value="0.015" selected>0.015</option>
-          <option value="0.020">0.020</option>
-          <option value="0.030">0.030</option>
-        </select>
-      </label>
-      <label class="small">Cooldown after LOSS
-        <select id="cooldownSetting">
-          <option value="0">0 ticks</option>
-          <option value="1">1 tick</option>
-          <option value="2" selected>2 ticks</option>
-          <option value="3">3 ticks</option>
-          <option value="5">5 ticks</option>
-        </select>
-      </label>
+    <div class="controls" style="margin-top:10px">
+      <select id="lookback"><option value="100">Lookback 100</option><option value="150">Lookback 150</option><option value="200" selected>Lookback 200</option><option value="300">Lookback 300</option><option value="500">Lookback 500</option></select>
+      <select id="minconf"><option value="0.10">Confidence 0.10</option><option value="0.13" selected>Confidence 0.13</option><option value="0.15">Confidence 0.15</option><option value="0.18">Confidence 0.18</option></select>
+      <select id="minsep"><option value="0.010">Separation 0.010</option><option value="0.015" selected>Separation 0.015</option><option value="0.020">Separation 0.020</option><option value="0.030">Separation 0.030</option></select>
+      <select id="cooldown"><option value="0">LOSS cooldown 0</option><option value="1" selected>LOSS cooldown 1</option><option value="2">LOSS cooldown 2</option><option value="3">LOSS cooldown 3</option><option value="5">LOSS cooldown 5</option></select>
     </div>
-    <div class="small" style="margin-top:9px">
-      V3では設定値を端末に保存します。CooldownはLOSS後の次回エントリーを一時停止するだけで、利益や勝率を保証するものではありません。
-    </div>
+    <div class="small" style="margin-top:8px">V3は「無理に入らない」ことを優先。設定値は端末に保存されます。</div>
   </div>
 
   <div class="card">
@@ -142,10 +111,36 @@ details summary{cursor:pointer;color:#d8e4f3;font-weight:700}
   </div>
 
   <div class="card">
+    <div class="label">Demo Account / 実注文はデモのみ</div>
+    <div class="row" style="margin-top:10px"><span>Demo balance</span><span id="demoBalance">—</span></div>
+    <div class="row"><span>Demo status</span><span id="demoStatus">OFF</span></div>
+    <input id="demoAccount" placeholder="Demo Account ID (DOT...)" style="width:100%;margin:6px 0;padding:12px;border-radius:12px;border:1px solid #22324a;background:#16243a;color:#fff">
+    <input id="demoAppId" placeholder="Deriv App ID" inputmode="numeric" style="width:100%;margin:6px 0;padding:12px;border-radius:12px;border:1px solid #22324a;background:#16243a;color:#fff">
+    <input id="demoToken" type="password" placeholder="PAT / Access Token（チャットには貼らない）" style="width:100%;margin:6px 0;padding:12px;border-radius:12px;border:1px solid #22324a;background:#16243a;color:#fff">
+    <div class="controls" style="margin-top:8px"><button class="primary" onclick="connectDemo()">DEMO CONNECT</button><button class="stop" onclick="disconnectDemo()">DEMO OFF</button></div>
+    <div class="small" style="margin-top:8px">安全のためReal口座URLはコードに入れていません。トークンは保存せず、入力欄にも自動保存しません。</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Demo Money Management</div>
+    <div class="controls" style="margin-top:10px">
+      <input id="stake" type="number" min="0.35" step="0.01" value="0.35" placeholder="Initial stake">
+      <input id="mult" type="number" min="1" step="0.01" value="2.15" placeholder="Martingale x">
+      <input id="maxStep" type="number" min="0" step="1" value="3" placeholder="Max steps">
+      <input id="maxStake" type="number" min="0.35" step="0.01" value="10" placeholder="Max stake">
+      <input id="maxLoss" type="number" min="0" step="0.01" value="20" placeholder="Max cumulative loss">
+      <select id="mg"><option value="off">Martingale OFF</option><option value="on" selected>Martingale ON</option></select>
+    </div>
+    <div class="row"><span>Next stake</span><span id="nextStake">0.35</span></div>
+    <div class="row"><span>Session P/L</span><span id="demoPL">0.00</span></div>
+    <button class="bt-btn" onclick="resetMoney()">RESET MONEY MANAGEMENT</button>
+  </div>
+
+  <div class="card">
     <details>
       <summary>このアプリについて</summary>
       <p class="small">
-      公開WebSocketからTickを取得し、直近データの頻度・遷移・2桁/3桁コンテキストを組み合わせてDigit 0〜9をスコアリングします。条件が弱い場合はSKIPします。V3ではLookback / Confidence / Separation / LOSS後Cooldownを変更でき、設定とPaper統計を端末に保存します。実注文APIは入れていません。
+      公開WebSocketからTickを取得し、直近データの頻度・遷移・2桁/3桁コンテキストを組み合わせてDigit 0〜9をスコアリングします。条件が弱い場合はSKIPします。V3は公開市場データ・バックテスト・Paper Tradingを統合し、任意でDerivのDemo Options口座へ接続できます。Real口座への接続機能は実装していません。
       </p>
     </details>
   </div>
@@ -155,44 +150,8 @@ details summary{cursor:pointer;color:#d8e4f3;font-weight:700}
 const WS_URL="wss://api.derivws.com/trading/v1/options/ws/public";
 let ws=null, running=false, history=[], digits=[], paper=null, log=[];
 let stats={trades:0,wins:0,losses:0,lossStreak:0,maxLoss:0,skips:0};
-let LOOKBACK=200, MIN_CONF=0.13, MIN_SEP=0.015, COOLDOWN=2;
-let cooldown=0;
-const SETTINGS_KEY="deriv_match_v3_settings";
-const STATS_KEY="deriv_match_v3_stats";
+let LOOKBACK=200, MIN_CONF=0.13, MIN_SEP=0.015, COOLDOWN=1;
 
-function saveSettings(){
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify({LOOKBACK,MIN_CONF,MIN_SEP,COOLDOWN}));
-}
-function loadSettings(){
-  try{
-    const s=JSON.parse(localStorage.getItem(SETTINGS_KEY)||"null");
-    if(s){
-      LOOKBACK=Number(s.LOOKBACK)||200;
-      MIN_CONF=Number(s.MIN_CONF)||0.13;
-      MIN_SEP=Number(s.MIN_SEP)||0.015;
-      COOLDOWN=Number.isFinite(Number(s.COOLDOWN))?Number(s.COOLDOWN):2;
-    }
-  }catch(e){}
-  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=String(v)};
-  set("lookbackSetting",LOOKBACK); set("minConfSetting",MIN_CONF); set("minSepSetting",MIN_SEP); set("cooldownSetting",COOLDOWN);
-}
-function saveStats(){
-  try{localStorage.setItem(STATS_KEY,JSON.stringify(stats))}catch(e){}
-}
-function loadStats(){
-  try{
-    const s=JSON.parse(localStorage.getItem(STATS_KEY)||"null");
-    if(s && typeof s==="object") stats={...stats,...s};
-  }catch(e){}
-}
-function applySettings(){
-  LOOKBACK=Number(document.getElementById("lookbackSetting").value);
-  MIN_CONF=Number(document.getElementById("minConfSetting").value);
-  MIN_SEP=Number(document.getElementById("minSepSetting").value);
-  COOLDOWN=Number(document.getElementById("cooldownSetting").value);
-  saveSettings();
-  if(running) start();
-}
 function digitFromQuote(q){
   const s=String(q);
   const a=s.match(/\d/g); return a?Number(a[a.length-1]):null;
@@ -255,28 +214,29 @@ function renderHistory(){
 function addLog(event,extra={}){
   log.push({time:new Date().toISOString(),event,...extra});
 }
+let lossCooldown=0;
 function settle(finalDigit){
   if(!paper)return;
   const win=finalDigit===paper.pred;
-  stats.trades++;
-  if(win){stats.wins++;stats.lossStreak=0}
-  else{stats.losses++;stats.lossStreak++;stats.maxLoss=Math.max(stats.maxLoss,stats.lossStreak);cooldown=COOLDOWN}
+  stats.trades++; if(win){stats.wins++;stats.lossStreak=0;lossCooldown=0}else{stats.losses++;stats.lossStreak++;stats.maxLoss=Math.max(stats.maxLoss,stats.lossStreak);lossCooldown=COOLDOWN}
   history.push({time:new Date().toLocaleTimeString(),pred:paper.pred,final:finalDigit,win});
-  addLog("SETTLE",{pred:paper.pred,final:finalDigit,result:win?"WIN":"LOSS",cooldown});
-  paper=null; renderStats();renderHistory();saveStats();
+  addLog("SETTLE",{pred:paper.pred,final:finalDigit,result:win?"WIN":"LOSS"});
+  if(demoAuto&&demoWS) settleDemo(win);
+  paper=null; renderStats();renderHistory();
 }
 function onTick(t){
   const d=digitFromQuote(t.quote); if(d===null)return;
   if(paper)settle(d);
   digits.push(d);if(digits.length>LOOKBACK)digits.shift();
   const sig=predict();updateUI(sig);renderDist();
-  if(cooldown>0){cooldown--;return}
   if(sig){
     const good=sig.confidence>=MIN_CONF&&sig.separation>=MIN_SEP;
-    if(good&&!paper){
+    if(good&&!paper&&lossCooldown===0){
       paper={pred:sig.prediction,confidence:sig.confidence,entry:d};
       addLog("PAPER_ENTRY",{pred:sig.prediction,confidence:sig.confidence,separation:sig.separation});
-    }else if(!good){stats.skips++;saveStats()}
+      if(demoAuto&&demoWS) requestDemoTrade(sig.prediction);
+    }else if(lossCooldown>0){lossCooldown--}
+    else if(!good)stats.skips++;
   }
 }
 function start(){
@@ -287,7 +247,7 @@ function start(){
   ws.onopen=()=>{
     document.getElementById("status").textContent="LIVE";
     document.getElementById("dot").classList.add("live");
-    ws.send(JSON.stringify({ticks_history:document.getElementById("symbol").value,end:"latest",count:LOOKBACK,style:"ticks",subscribe:0,req_id:1}));
+    ws.send(JSON.stringify({ticks_history:document.getElementById("symbol").value,end:"latest",count:LOOKBACK,style:"ticks",req_id:1}));
     ws.send(JSON.stringify({ticks:document.getElementById("symbol").value,subscribe:1,req_id:2}));
   };
   ws.onmessage=e=>{
@@ -306,19 +266,18 @@ function start(){
   ws.onerror=()=>document.getElementById("status").textContent="接続エラー";
 }
 function stop(){running=false;if(ws){try{ws.close()}catch(e){}ws=null}document.getElementById("status").textContent="停止";document.getElementById("dot").classList.remove("live")}
-function clearStats(){stats={trades:0,wins:0,losses:0,lossStreak:0,maxLoss:0,skips:0};history=[];paper=null;log=[];cooldown=0;saveStats();renderStats();renderHistory()}
+function clearStats(){stats={trades:0,wins:0,losses:0,lossStreak:0,maxLoss:0,skips:0};history=[];paper=null;log=[];renderStats();renderHistory()}
 function downloadLog(){
   const rows=[["time","event","pred","final","result","confidence","separation"],...log.map(x=>[x.time,x.event,x.pred??"",x.final??"",x.result??"",x.confidence??"",x.separation??""])];
   const csv=rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="deriv_match_paper_log.csv";a.click();
 }
 document.getElementById("symbol").onchange=e=>{document.getElementById("symbolText").textContent=e.target.value;if(running)start()};
-["lookbackSetting","minConfSetting","minSepSetting","cooldownSetting"].forEach(id=>document.getElementById(id).addEventListener("change",applySettings));
-loadSettings();loadStats();renderStats();renderHistory();renderDist();
+renderStats();renderHistory();renderDist();
 </script>
 
 <section id="backtestPanel">
-<h2>📊 BACKTEST V3</h2>
+<h2>📊 BACKTEST V3 FIXED</h2>
 <div class="bt-grid">
 <label>Symbol<select id="btSymbol">
 <option value="1HZ100V">Volatility 100 (1s)</option>
@@ -334,7 +293,7 @@ loadSettings();loadStats();renderStats();renderHistory();renderDist();
 </select></label>
 </div>
 <button class="bt-btn" id="btStart">BACKTEST START</button>
-<div class="bt-status" id="btStatus">過去ティックを取得してV3予測ロジックを検証します。</div>
+<div class="bt-status" id="btStatus">subscribe検証エラーを回避し、過去ティックでV3ロジックを検証します。</div>
 <div class="bt-stats">
 <div class="bt-card"><b id="btTrades">-</b><span>ENTRY</span></div>
 <div class="bt-card"><b id="btSkips">-</b><span>SKIP</span></div>
@@ -353,6 +312,7 @@ loadSettings();loadStats();renderStats();renderHistory();renderDist();
 <script>
 (()=> {
 const WS="wss://api.derivws.com/trading/v1/options/ws/public";
+const LOOKBACK=200,MIN_CONF=.13,MIN_SEP=.015;
 const $=id=>document.getElementById(id);let rows=[];
 
 function digit(x){const m=String(x).match(/(\d)(?!.*\d)/);return m?+m[1]:null}
@@ -394,7 +354,7 @@ function history(symbol,count){
    const ws=new WebSocket(WS);
    const tm=setTimeout(()=>{try{ws.close()}catch(e){};reject(Error("履歴取得タイムアウト"))},30000);
    ws.onopen=()=>ws.send(JSON.stringify({
-     ticks_history:symbol,end:"latest",count,style:"ticks",subscribe:0
+     ticks_history:symbol,end:"latest",count,style:"ticks"
    }));
    ws.onerror=()=>{clearTimeout(tm);reject(Error("WebSocket接続エラー"))};
    ws.onmessage=e=>{
@@ -479,5 +439,38 @@ $("btCsv").onclick=()=>{
 })();
 </script>
 
+
+<script>
+let demoWS=null,demoAuto=true,demoStake=0.35,demoStep=0,demoPL=0,demoContract=null;
+function val(id){return document.getElementById(id).value}
+function updateMoneyUI(){demoStake=Math.max(.35,Number(val("stake"))||.35);document.getElementById("nextStake").textContent=demoStake.toFixed(2);document.getElementById("demoPL").textContent=demoPL.toFixed(2)}
+function resetMoney(){demoStake=Math.max(.35,Number(val("stake"))||.35);demoStep=0;demoPL=0;updateMoneyUI()}
+async function connectDemo(){
+  disconnectDemo();
+  const account=val("demoAccount").trim(),app=val("demoAppId").trim(),token=val("demoToken").trim();
+  if(!account||!app||!token){document.getElementById("demoStatus").textContent="App ID / Account ID / Tokenを入力";return}
+  if(!/^DOT/i.test(account)){document.getElementById("demoStatus").textContent="Demo Account IDはDOTで始まるものを指定";return}
+  document.getElementById("demoStatus").textContent="OTP取得中…";
+  try{
+    const r=await fetch(`https://api.derivws.com/trading/v1/options/accounts/${encodeURIComponent(account)}/otp`,{method:"POST",headers:{"Authorization":"Bearer "+token,"Deriv-App-ID":app}});
+    const j=await r.json(); if(!r.ok)throw Error(j?.errors?.[0]?.message||"OTP取得失敗");
+    const u=j?.data?.url||""; if(!u||!u.includes("/ws/demo"))throw Error("Demo WebSocket URLではありません");
+    demoWS=new WebSocket(u);
+    demoWS.onopen=()=>{document.getElementById("demoStatus").textContent="DEMO CONNECTED";demoWS.send(JSON.stringify({balance:1,subscribe:1,req_id:901}))};
+    demoWS.onmessage=e=>{const m=JSON.parse(e.data);if(m.error){document.getElementById("demoStatus").textContent="DEMO ERROR: "+m.error.message;return}if(m.msg_type==="balance"){document.getElementById("demoBalance").textContent=Number(m.balance.balance).toFixed(2)+" "+(m.balance.currency||"")}if(m.msg_type==="proposal"&&m.proposal?.id&&demoPending){const p=demoPending;demoPending=null;demoWS.send(JSON.stringify({buy:m.proposal.id,price:Number(m.proposal.ask_price)||p.stake,req_id:903}))}if(m.msg_type==="buy"&&m.buy?.contract_id){demoContract=m.buy.contract_id;demoWS.send(JSON.stringify({proposal_open_contract:1,contract_id:demoContract,subscribe:1,req_id:904}))}if(m.msg_type==="proposal_open_contract"){const c=m.proposal_open_contract;if(c.is_sold||c.status==="sold"||c.is_expired){const pr=Number(c.profit)||0;demoPL+=pr;if(pr>=0){demoStep=0;demoStake=Math.max(.35,Number(val("stake"))||.35)}else if(val("mg")==="on"){demoStep++;const ms=Number(val("maxStep"))||0;demoStake=Math.min(Number(val("maxStake"))||10,demoStake*(Number(val("mult"))||2.15));if(demoStep>ms){demoStep=0;demoStake=Math.max(.35,Number(val("stake"))||.35)}}else{demoStep=0;demoStake=Math.max(.35,Number(val("stake"))||.35)}updateMoneyUI();document.getElementById("demoStatus").textContent="DEMO RESULT: "+(pr>=0?"WIN ":"LOSS ")+pr.toFixed(2);demoContract=null}}};
+    demoWS.onerror=()=>document.getElementById("demoStatus").textContent="DEMO WebSocket error";demoWS.onclose=()=>{document.getElementById("demoStatus").textContent="OFF";demoWS=null};
+  }catch(e){document.getElementById("demoStatus").textContent="ERROR: "+e.message}
+}
+function disconnectDemo(){if(demoWS){try{demoWS.close()}catch(e){}demoWS=null}document.getElementById("demoStatus").textContent="OFF"}
+let demoPending=null;
+function requestDemoTrade(pred){
+ if(!demoWS||demoWS.readyState!==1)return;
+ const maxLoss=Number(val("maxLoss"))||20;if(Math.abs(Math.min(0,demoPL))>=maxLoss){demoAuto=false;document.getElementById("demoStatus").textContent="STOP: max cumulative loss";return}
+ const stake=Math.min(Number(val("maxStake"))||10,demoStake);demoPending={stake,pred};
+ demoWS.send(JSON.stringify({proposal:1,amount:stake,basis:"stake",contract_type:"DIGITMATCH",currency:"USD",duration:1,duration_unit:"t",barrier:String(pred),underlying_symbol:document.getElementById("symbol").value,subscribe:0,req_id:902}));
+}
+function settleDemo(win){ /* Demo result is confirmed by proposal_open_contract; kept for synchronization. */ }
+["stake","mult","maxStep","maxStake","maxLoss","mg"].forEach(id=>document.getElementById(id).addEventListener("input",updateMoneyUI));updateMoneyUI();
+</script>
 </body>
 </html>
